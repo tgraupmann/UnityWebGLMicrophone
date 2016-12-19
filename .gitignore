@@ -1,2 +1,8 @@
 Library/
 Temp/
+.vs/
+obj/
+UnityWebGLMicrophone.sln
+Assembly-CSharp.csproj
+Assembly-CSharp-firstpass.csproj
+Build/
