@@ -13,6 +13,10 @@ var MicrophonePlugin = {
         }]
       }
     };
+    navigator.getUserMedia = ( navigator.getUserMedia ||
+				   navigator.webkitGetUserMedia ||
+				   navigator.mozGetUserMedia ||
+				   navigator.msGetUserMedia);
     navigator.getUserMedia(constraints, function(stream) {
       console.log('navigator.getUserMedia successCallback: ', stream);
 	  
