@@ -6,3 +6,5 @@ UnityWebGLMicrophone.sln
 Assembly-CSharp.csproj
 Assembly-CSharp-firstpass.csproj
 Build/
+Test/package-lock.json
+Test/node_modules/
