@@ -38,7 +38,7 @@
         document.source.connect(document.analyser);
 
         document.mediaRecorder.start();
-        console.log(document.mediaRecorder.state);
+        //console.log('Microphone Status: ', document.mediaRecorder.state);
 
         document.readDataOnInterval = function() {
 
@@ -59,23 +59,24 @@
           //read the temp data buffer
           document.analyser.getFloatTimeDomainData(document.tempArray);
 
+          // use the amplitude to get volume
+          var volume = 0;
+
           var j = (document.position + document.dataArray.length - document.tempSize) % document.dataArray.length;
           for (var i = 0; i < document.tempSize; ++i) {
+            volume = Math.max(volume, Math.abs(document.tempArray[i]));
             document.dataArray[j] = document.tempArray[i];
             j = (j + 1) % document.dataArray.length;
           }
           document.position = (document.position + document.tempSize) % document.dataArray.length;
+
+          console.log('Data read.', 'volume', volume);
         };
 
         document.readDataOnInterval();
-
       }, function(error) {
-        console.log('navigator.getUserMedia errorCallback: ', error);
+        console.error('navigator.getUserMedia errorCallback: ', error);
       });
-    },
-
-    GetMicrophonePosition: function() {
-      return document.position;
     },
 
     hasGetUserMedia: function() {
@@ -84,15 +85,10 @@
     },
 
     InitJavaScriptSharedArray: function(byteOffset, length) {
-      console.log("InitJavaScriptSharedArray:");
-  	if (buffer == undefined) {
-  	  console.log("InitJavaScriptSharedArray: buffer is undefined!");
-  	  return;
-  	}
+      console.log("InitJavaScriptSharedArray: length="+length);
 
-  	console.log("InitJavaScriptSharedArray: length="+length);
-
-      document.dataArray = new Float32Array(buffer, byteOffset, length);
+      this.buffer = new ArrayBuffer(4 * length);
+      document.dataArray = new Float32Array(this.buffer, byteOffset, length);
     },
 
     AddMicrophone: function(device) {
@@ -139,6 +135,8 @@
 
 MicrophonePlugin.Init();
 
+MicrophonePlugin.InitJavaScriptSharedArray(0, 1024);
+
 setInterval(function() {
 
   MicrophonePlugin.QueryAudioInput(function() {
@@ -167,6 +165,7 @@ setInterval(function() {
     <div>
     Unit Tests:
     </div>
+    <button>Begin Monitoring</button>
     <div id="NumberOfMicrophones"></div>
     <div id="Microphones"></div>
   </body>
