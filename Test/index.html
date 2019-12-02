@@ -43,11 +43,11 @@
         document.readDataOnInterval = function() {
 
           if (document.dataArray == undefined) {
-            setTimeout(document.readDataOnInterval, 1000); //wait to be set
+            setTimeout(document.readDataOnInterval, 250); //wait to be set
             return;
           }
 
-          document.tempInterval = Math.floor(document.tempSize / document.dataArray.length * 1000);
+          document.tempInterval = Math.floor(document.tempSize / document.dataArray.length * 250);
 
           // read the next chunk after interval
           setTimeout(document.readDataOnInterval, document.tempInterval); //if mic is still active
