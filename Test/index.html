@@ -18,65 +18,73 @@
           }]
         }
       };
-      navigator.getUserMedia(constraints, function(stream) {
-        //console.log('navigator.getUserMedia successCallback: ', stream);
 
-        document.position = 0;
+      navigator.getUserMedia = navigator.getUserMedia ||
+                               navigator.webkitGetUserMedia ||
+                               navigator.mozGetUserMedia;
 
-        document.audioContext = new AudioContext();
-        document.tempSize = 1024;
-        document.tempArray = new Float32Array(document.tempSize)
-        document.analyser = document.audioContext.createAnalyser();
-        document.analyser.minDecibels = -90;
-        document.analyser.maxDecibels = -10;
-        document.analyser.smoothingTimeConstant = 0.85;
+      if (navigator.getUserMedia) {
 
-        document.mediaRecorder = new MediaRecorder(stream);
+        navigator.getUserMedia(constraints, function(stream) {
+          //console.log('navigator.getUserMedia successCallback: ', stream);
 
-        document.source = document.audioContext.createMediaStreamSource(stream);
+          document.position = 0;
 
-        document.source.connect(document.analyser);
+          document.audioContext = new AudioContext();
+          document.tempSize = 1024;
+          document.tempArray = new Float32Array(document.tempSize)
+          document.analyser = document.audioContext.createAnalyser();
+          document.analyser.minDecibels = -90;
+          document.analyser.maxDecibels = -10;
+          document.analyser.smoothingTimeConstant = 0.85;
 
-        document.mediaRecorder.start();
-        //console.log('Microphone Status: ', document.mediaRecorder.state);
+          document.mediaRecorder = new MediaRecorder(stream);
 
-        document.readDataOnInterval = function() {
+          document.source = document.audioContext.createMediaStreamSource(stream);
 
-          if (document.dataArray == undefined) {
-            setTimeout(document.readDataOnInterval, 250); //wait to be set
-            return;
-          }
+          document.source.connect(document.analyser);
 
-          document.tempInterval = Math.floor(document.tempSize / document.dataArray.length * 250);
+          document.mediaRecorder.start();
+          //console.log('Microphone Status: ', document.mediaRecorder.state);
 
-          // read the next chunk after interval
-          setTimeout(document.readDataOnInterval, document.tempInterval); //if mic is still active
+          document.readDataOnInterval = function() {
 
-          if (document.dataArray == undefined) {
-            return;
-          }
+            if (document.dataArray == undefined) {
+              setTimeout(document.readDataOnInterval, 250); //wait to be set
+              return;
+            }
 
-          //read the temp data buffer
-          document.analyser.getFloatTimeDomainData(document.tempArray);
+            document.tempInterval = Math.floor(document.tempSize / document.dataArray.length * 250);
 
-          // use the amplitude to get volume
-          var volume = 0;
+            // read the next chunk after interval
+            setTimeout(document.readDataOnInterval, document.tempInterval); //if mic is still active
 
-          var j = (document.position + document.dataArray.length - document.tempSize) % document.dataArray.length;
-          for (var i = 0; i < document.tempSize; ++i) {
-            volume = Math.max(volume, Math.abs(document.tempArray[i]));
-            document.dataArray[j] = document.tempArray[i];
-            j = (j + 1) % document.dataArray.length;
-          }
-          document.position = (document.position + document.tempSize) % document.dataArray.length;
+            if (document.dataArray == undefined) {
+              return;
+            }
 
-          console.log('Data read.', 'volume', volume);
-        };
+            //read the temp data buffer
+            document.analyser.getFloatTimeDomainData(document.tempArray);
 
-        document.readDataOnInterval();
-      }, function(error) {
-        console.error('navigator.getUserMedia errorCallback: ', error);
-      });
+            // use the amplitude to get volume
+            var volume = 0;
+
+            var j = (document.position + document.dataArray.length - document.tempSize) % document.dataArray.length;
+            for (var i = 0; i < document.tempSize; ++i) {
+              volume = Math.max(volume, Math.abs(document.tempArray[i]));
+              document.dataArray[j] = document.tempArray[i];
+              j = (j + 1) % document.dataArray.length;
+            }
+            document.position = (document.position + document.tempSize) % document.dataArray.length;
+
+            console.log('Data read.', 'volume', volume);
+          };
+
+          document.readDataOnInterval();
+        }, function(error) {
+          console.error('navigator.getUserMedia errorCallback: ', error);
+        });
+      }
     },
 
     hasGetUserMedia: function() {
