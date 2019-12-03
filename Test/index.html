@@ -3,13 +3,18 @@
     <script>
   var MicrophonePlugin = {
 
+    buffer: undefined,
+
     mMicrophones: [],
 
     Init: function() {
 
       //console.log("Init:");
 
-      document.dataArray = undefined;
+      var byteOffset = 0;
+      var length = 1024;
+      this.buffer = new ArrayBuffer(4 * length);
+      document.dataArray = new Float32Array(this.buffer, byteOffset, length);
 
       var constraints = {
         audio: {
@@ -92,13 +97,6 @@
         navigator.mozGetUserMedia || navigator.msGetUserMedia);
     },
 
-    InitJavaScriptSharedArray: function(byteOffset, length) {
-      console.log("InitJavaScriptSharedArray: length="+length);
-
-      this.buffer = new ArrayBuffer(4 * length);
-      document.dataArray = new Float32Array(this.buffer, byteOffset, length);
-    },
-
     AddMicrophone: function(device) {
       this.mMicrophones.push(device);
     },
@@ -142,8 +140,6 @@
   };
 
 MicrophonePlugin.Init();
-
-MicrophonePlugin.InitJavaScriptSharedArray(0, 1024);
 
 setInterval(function() {
 
