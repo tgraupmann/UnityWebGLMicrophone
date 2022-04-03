@@ -1,0 +1,176 @@
+<html>
+  <body>
+    <script>
+  var MicrophonePlugin = {
+
+    buffer: undefined,
+
+    mMicrophones: [],
+
+    Init: function() {
+
+      //console.log("Init:");
+
+      var byteOffset = 0;
+      var length = 1024;
+      this.buffer = new ArrayBuffer(4 * length);
+      document.dataArray = new Float32Array(this.buffer, byteOffset, length);
+
+      var constraints = {
+        audio: {
+          optional: [{
+            sourceId: "audioSource"
+          }]
+        }
+      };
+
+      navigator.getUserMedia = navigator.getUserMedia ||
+                               navigator.webkitGetUserMedia ||
+                               navigator.mozGetUserMedia;
+
+      if (navigator.getUserMedia) {
+
+        navigator.getUserMedia(constraints, function(stream) {
+          //console.log('navigator.getUserMedia successCallback: ', stream);
+
+          document.position = 0;
+
+          document.audioContext = new AudioContext();
+          document.tempSize = 1024;
+          document.tempArray = new Float32Array(document.tempSize)
+          document.analyser = document.audioContext.createAnalyser();
+          document.analyser.minDecibels = -90;
+          document.analyser.maxDecibels = -10;
+          document.analyser.smoothingTimeConstant = 0.85;
+
+          document.mediaRecorder = new MediaRecorder(stream);
+
+          document.source = document.audioContext.createMediaStreamSource(stream);
+
+          document.source.connect(document.analyser);
+
+          document.mediaRecorder.start();
+          //console.log('Microphone Status: ', document.mediaRecorder.state);
+
+          document.readDataOnInterval = function() {
+
+            if (document.dataArray == undefined) {
+              setTimeout(document.readDataOnInterval, 250); //wait to be set
+              return;
+            }
+
+            document.tempInterval = Math.floor(document.tempSize / document.dataArray.length * 250);
+
+            // read the next chunk after interval
+            setTimeout(document.readDataOnInterval, document.tempInterval); //if mic is still active
+
+            if (document.dataArray == undefined) {
+              return;
+            }
+
+            //read the temp data buffer
+            document.analyser.getFloatTimeDomainData(document.tempArray);
+
+            // use the amplitude to get volume
+            var volume = 0;
+
+            var j = (document.position + document.dataArray.length - document.tempSize) % document.dataArray.length;
+            for (var i = 0; i < document.tempSize; ++i) {
+              volume = Math.max(volume, Math.abs(document.tempArray[i]));
+              document.dataArray[j] = document.tempArray[i];
+              j = (j + 1) % document.dataArray.length;
+            }
+            document.position = (document.position + document.tempSize) % document.dataArray.length;
+
+            console.log('Data read.', 'volume', volume);
+          };
+
+          document.readDataOnInterval();
+        }, function(error) {
+          console.error('navigator.getUserMedia errorCallback: ', error);
+        });
+      }
+    },
+
+    hasGetUserMedia: function() {
+      return !!(navigator.getUserMedia || navigator.webkitGetUserMedia ||
+        navigator.mozGetUserMedia || navigator.msGetUserMedia);
+    },
+
+    AddMicrophone: function(device) {
+      this.mMicrophones.push(device);
+    },
+
+    QueryAudioInput: function(callback) {
+
+      var refThis = this;
+
+      // clear
+      this.mMicrophones = [];
+
+      if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) {
+        console.log("enumerateDevices() not supported.");
+      } else {
+        // List microphones - async
+        navigator.mediaDevices.enumerateDevices()
+        .then(function(devices) {
+          devices.forEach(function(device) {
+            //console.log("QueryAudioInput: kind="+device.kind + " device=", device, " id=" + device.deviceId);
+            if (device.kind === 'audioinput') {
+              //console.log("QueryAudioInput: kind=audioinput device=", device, " id=" + device.deviceId);
+              refThis.AddMicrophone(device);
+            }
+          });
+          callback();
+        })
+        .catch(function(err) {
+          console.error('Error', err.name + ": " + err.message);
+        });
+      }
+    },
+
+    GetNumberOfMicrophones: function() {
+      //console.log("GetNumberOfMicrophones length", this.mMicrophones.length);
+      return this.mMicrophones.length;
+    },
+
+    GetMicrophoneDeviceName: function(index) {
+      return this.mMicrophones[index].label;
+    }
+  };
+
+MicrophonePlugin.Init();
+
+setInterval(function() {
+
+  MicrophonePlugin.QueryAudioInput(function() {
+    //console.log('Getting number of mics...');
+    var numberOfMicrophones = MicrophonePlugin.GetNumberOfMicrophones();
+    //console.log('Number of Microphones...', numberOfMicrophones);
+    var divNumberOfMicrophones = document.getElementById('NumberOfMicrophones');
+    if (divNumberOfMicrophones != undefined) {
+      divNumberOfMicrophones.innerText = "Number of Microphones: "+numberOfMicrophones;
+    }
+
+    var divMicrophones = document.getElementById('Microphones');
+    if (divMicrophones != undefined) {
+      var text = '';
+      for (var i = 0; i < numberOfMicrophones; ++i) {
+        var name = MicrophonePlugin.GetMicrophoneDeviceName(i);
+        text += '* ' + name + "\r\n";
+      }
+      divMicrophones.innerText = text;
+    }
+  });
+
+}, 1000);
+
+    </script>
+    <div>
+    Unit Tests:
+    </div>
+    <br/>
+    <div id="NumberOfMicrophones"></div>
+    <div id="Microphones"></div>
+  </body>
+</html>

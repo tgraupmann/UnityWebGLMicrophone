@@ -5,4 +5,10 @@ obj/
 UnityWebGLMicrophone.sln
 Assembly-CSharp.csproj
 Assembly-CSharp-firstpass.csproj
-Build/
+Test/package-lock.json
+Test/node_modules/
+UnityWebGLMicrophone.csproj
+UnityWebGLMicrophone.Plugins.csproj
+Build/Build/
+Build/node_modules/
+Build/TemplateData/

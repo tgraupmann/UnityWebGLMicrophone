@@ -26,6 +26,10 @@ namespace UnityWebGLMicrophone
 
             string[] devices = Microphone.devices;
 
+#if UNITY_WEBGL && !UNITY_EDITOR
+            float[] volumes = Microphone.volumes;
+#endif
+
             GUILayout.BeginHorizontal(GUILayout.Width(Screen.width));
             GUILayout.FlexibleSpace();
             GUILayout.Label(string.Format("Microphone count={0}", devices.Length));
@@ -42,7 +46,11 @@ namespace UnityWebGLMicrophone
 
                 GUILayout.BeginHorizontal(GUILayout.Width(Screen.width));
                 GUILayout.FlexibleSpace();
+#if UNITY_WEBGL && !UNITY_EDITOR
+                GUILayout.Label(string.Format("Device Name={0} Volume={1}", deviceName, volumes[index]));
+#else
                 GUILayout.Label(string.Format("Device Name={0}", deviceName));
+#endif
                 GUILayout.FlexibleSpace();
                 GUILayout.EndHorizontal();
             }
