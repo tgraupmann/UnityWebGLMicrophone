@@ -15,6 +15,7 @@
   <div style="display: flex; flex-direction: row; justify-content:space-evenly">
     <div style="display: flex; flex-direction: row; justify-content: flex-start; gap: 50px">
       <div style="display: flex; flex-direction: column; gap: 20px">
+        <audio style="display: none" id="audio"></audio>
         <div>Volume:</div>
         <canvas id="canvasVolume" width="512" height="256" style="border: solid 1px white"></canvas>
         <div>Wave:</div>
@@ -30,18 +31,13 @@
   <script>
     var MicrophonePlugin = {
 
-      buffer: undefined,
-
       mMicrophones: [],
 
       Init: function () {
 
         //console.log("Init:");
 
-        var byteOffset = 0;
-        var length = 1024;
-        this.buffer = new ArrayBuffer(4 * length);
-        document.dataArray = new Float32Array(this.buffer, byteOffset, length);
+        document.dataArray = [];
 
         var constraints = {
           audio: {
@@ -58,9 +54,7 @@
         if (navigator.getUserMedia) {
 
           navigator.getUserMedia(constraints, function (stream) {
-            //console.log('navigator.getUserMedia successCallback: ', stream);
-
-            document.position = 0;
+            //console.log('navigator.getUserMedia successCallback:', 'constraints', constraints, 'stream', stream);
 
             document.audioContext = new AudioContext();
             document.tempSize = 1024;
@@ -69,15 +63,20 @@
             document.analyser.minDecibels = -90;
             document.analyser.maxDecibels = -10;
             document.analyser.smoothingTimeConstant = 0.85;
+            document.sampleRate = 48000;
 
-            document.mediaRecorder = new MediaRecorder(stream);
+            const options = {
+              mimeType: "audio/webm",
+              audioBitsPerSecond: document.sampleRate
+            };
+            const mediaRecorder = new MediaRecorder(stream, options);
+            document.mediaRecorder = mediaRecorder;
 
             document.source = document.audioContext.createMediaStreamSource(stream);
 
             document.source.connect(document.analyser);
 
-            document.mediaRecorder.start();
-            //console.log('Microphone Status: ', document.mediaRecorder.state);
+            //console.log('Microphone Status: ', mediaRecorder.state);
 
             var x = 0;
 
@@ -128,21 +127,12 @@
               return val;
             }
 
-            document.readDataOnInterval = function () {
+            mediaRecorder.addEventListener("dataavailable", async (evt) => {
 
-              if (document.dataArray == undefined) {
-                setTimeout(document.readDataOnInterval, 1000 / 30); //wait to be set
-                return;
-              }
+              const data = evt.data;
 
-              document.tempInterval = Math.floor(document.tempSize / document.dataArray.length * 1000 / 30);
-
-              // read the next chunk after interval
-              setTimeout(document.readDataOnInterval, document.tempInterval); //if mic is still active
-
-              if (document.dataArray == undefined) {
-                return;
-              }
+              //const arrayBuffer = await data.arrayBuffer();
+              //const floatArray = new Float32Array(arrayBuffer);
 
               //read the temp data buffer
               document.analyser.getFloatTimeDomainData(document.tempArray);
@@ -150,13 +140,14 @@
               // use the amplitude to get volume
               var volume = 0;
 
-              var j = (document.position + document.dataArray.length - document.tempSize) % document.dataArray.length;
               for (var i = 0; i < document.tempSize; ++i) {
                 volume = Math.max(volume, Math.abs(document.tempArray[i]));
-                document.dataArray[j] = document.tempArray[i];
-                j = (j + 1) % document.dataArray.length;
+                document.dataArray.push(document.tempArray[i]);
               }
-              document.position = (document.position + document.tempSize) % document.dataArray.length;
+
+              if (document.dataArray.length > document.sampleRate) {
+                document.dataArray = document.dataArray.slice(document.dataArray.length - document.sampleRate);
+              }
 
               //console.log('Data read.', 'volume', volume);
 
@@ -193,7 +184,7 @@
 
               for (let i = 0; i < width; ++i) {
 
-                const d = document.dataArray[i * 2];
+                const d = document.dataArray[Math.floor(i * document.dataArray.length / width)];
                 const dv = clamp(-1, 1, Math.pow(1 + d, 4) - 1);
 
                 const color = lerpColor(color1, color2, Math.abs(dv));
@@ -212,9 +203,15 @@
                 ctx2.rect(i, halfHeight, 1, dv * height * 0.5);
                 ctx2.stroke();
               }
-            };
+            });
 
-            document.readDataOnInterval();
+            mediaRecorder.start();
+
+            setInterval(function () {
+              document.mediaRecorder.stop();
+              document.mediaRecorder.start();
+            }, 1000 / 30);
+
           }, function (error) {
             console.error('navigator.getUserMedia errorCallback: ', error);
           });
