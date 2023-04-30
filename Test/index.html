@@ -16,7 +16,9 @@
     <div style="display: flex; flex-direction: row; justify-content: flex-start; gap: 50px">
       <div style="display: flex; flex-direction: column; gap: 20px">
         <div>Volume:</div>
-        <canvas id="canvasVolume" width="512" height="512" style="border: solid 1px white"></canvas>
+        <canvas id="canvasVolume" width="512" height="256" style="border: solid 1px white"></canvas>
+        <div>Wave:</div>
+        <canvas id="canvasWave" width="512" height="256" style="border: solid 1px white"></canvas>
       </div>
       <div style="display: flex; flex-direction: column; gap: 20px">
         <div id="NumberOfMicrophones"></div>
@@ -163,7 +165,7 @@
               const width = canvas.width;
               const height = canvas.height;
 
-              const v = clamp(0, 1, Math.pow(1 + volume, 2) - 1);
+              const v = clamp(0, 1, Math.pow(1 + volume * 0.75, 2) - 1);
 
               const color1 = getRGB(255, 255, 0);
               const color2 = getRGB(255, 0, 0);
@@ -184,6 +186,32 @@
               ctx.stroke();
 
               x = (x + 10) % width;
+
+              const canvas2 = document.getElementById("canvasWave");
+              const ctx2 = canvas2.getContext("2d", { willReadFrequently: true });
+              const halfHeight = canvas2.height / 2;
+
+              for (let i = 0; i < width; ++i) {
+
+                const d = document.dataArray[width + i];
+                const dv = clamp(-1, 1, Math.pow(1 + d, 4) - 1);
+
+                const color = lerpColor(color1, color2, Math.abs(dv));
+
+                // clear rectangle
+                ctx2.beginPath();
+                ctx2.lineWidth = "1";
+                ctx2.strokeStyle = "black";
+                ctx2.rect(i, 0, 1, height);
+                ctx2.stroke();
+
+                // wave rectangle
+                ctx2.beginPath();
+                ctx2.lineWidth = "1";
+                ctx2.strokeStyle = convertIntToRGB(color);
+                ctx2.rect(i, halfHeight, 1, dv * height * 0.5);
+                ctx2.stroke();
+              }
             };
 
             document.readDataOnInterval();
