@@ -193,7 +193,7 @@
 
               for (let i = 0; i < width; ++i) {
 
-                const d = document.dataArray[width + i];
+                const d = document.dataArray[i * 2];
                 const dv = clamp(-1, 1, Math.pow(1 + d, 4) - 1);
 
                 const color = lerpColor(color1, color2, Math.abs(dv));
