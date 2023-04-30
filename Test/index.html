@@ -158,9 +158,14 @@
 
               const v = clamp(0, 1, Math.pow(1 + volume * 0.75, 2) - 1);
 
-              const color1 = getRGB(255, 255, 0);
-              const color2 = getRGB(255, 0, 0);
-              const color = lerpColor(color1, color2, v);
+              const black = 0;
+              const yellow = getRGB(255, 255, 0);
+              const red = getRGB(255, 0, 0);
+              const green = getRGB(0, 255, 0);
+              const blue = getRGB(0, 0, 255);
+              const cyan = getRGB(0, 255, 255);
+              const magenta = getRGB(255, 0, 255);
+              const color = lerpColor(yellow, red, v);
 
               // clear rectangle
               ctx.beginPath();
@@ -182,24 +187,28 @@
               const ctx2 = canvas2.getContext("2d", { willReadFrequently: true });
               const halfHeight = canvas2.height / 2;
 
+              ctx2.clearRect(0, 0, width, height);
+
+              const color2 = lerpColor(blue, green, v);
+
               for (let i = 0; i < width; ++i) {
 
                 const d = document.dataArray[Math.floor(i * document.dataArray.length / width)];
-                const dv = clamp(-1, 1, Math.pow(1 + d, 4) - 1);
+                const dv = clamp(-1, 1, Math.pow(1 + Math.abs(d), 4) - 1);
 
-                const color = lerpColor(color1, color2, Math.abs(dv));
-
-                // clear rectangle
-                ctx2.beginPath();
-                ctx2.lineWidth = "1";
-                ctx2.strokeStyle = "black";
-                ctx2.rect(i, 0, 1, height);
-                ctx2.stroke();
+                const color = lerpColor(red, yellow, Math.abs(dv));
+                const color2 = lerpColor(cyan, magenta, Math.abs(dv));
 
                 // wave rectangle
                 ctx2.beginPath();
                 ctx2.lineWidth = "1";
                 ctx2.strokeStyle = convertIntToRGB(color);
+                ctx2.rect(i, halfHeight, 1, -dv * height * 0.5);
+                ctx2.stroke();
+
+                ctx2.beginPath();
+                ctx2.lineWidth = "1";
+                ctx2.strokeStyle = convertIntToRGB(lerpColor(0, color2, 0.5));
                 ctx2.rect(i, halfHeight, 1, dv * height * 0.5);
                 ctx2.stroke();
               }
