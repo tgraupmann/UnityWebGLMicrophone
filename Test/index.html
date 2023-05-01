@@ -196,7 +196,7 @@
                 //console.log('fnGetVolumeRange', list.length, index, size);
                 let d = Math.abs(list[index]);
                 const count = index + size;
-                for (let i = index + 1; i < list.length && i < count; i += 3) {
+                for (let i = index + 1; i < list.length && i < count; ++i) {
                   d = Math.max(d, Math.abs(list[i]));
                 }
                 return d;
@@ -206,7 +206,8 @@
 
               for (let i = 0; i < width; ++i) {
 
-                const d = fnGetVolumeRange(document.dataArray, Math.floor(i * increment), increment);
+                //const d = fnGetVolumeRange(document.dataArray, Math.floor(i * increment), increment);
+                const d = fnGetVolumeRange(document.dataArray, Math.floor(i * increment), 5);
                 const dv = clamp(-1, 1, Math.pow(1 + d * 0.75, 2) - 1);
 
                 const color = lerpColor(red, yellow, Math.abs(dv));
