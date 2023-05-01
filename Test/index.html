@@ -19,7 +19,7 @@
         <div>Volume:</div>
         <canvas id="canvasVolume" width="512" height="256" style="border: solid 1px white"></canvas>
         <div>Wave:</div>
-        <canvas id="canvasWave" width="512" height="256" style="border: solid 1px white"></canvas>
+        <canvas id="canvasWave" width="512" height="512" style="border: solid 1px white"></canvas>
       </div>
       <div style="display: flex; flex-direction: column; gap: 20px">
         <div id="NumberOfMicrophones"></div>
@@ -154,7 +154,7 @@
               const canvas = document.getElementById("canvasVolume");
               const ctx = canvas.getContext("2d", { willReadFrequently: true });
               const width = canvas.width;
-              const height = canvas.height;
+              const heightVolume = canvas.height;
 
               const v = clamp(0, 1, Math.pow(1 + volume * 0.75, 2) - 1);
 
@@ -171,30 +171,43 @@
               ctx.beginPath();
               ctx.lineWidth = "10";
               ctx.strokeStyle = "black";
-              ctx.rect(x, 0, 10, height);
+              ctx.rect(x, 0, 10, heightVolume);
               ctx.stroke();
 
               // volume rectangle
               ctx.beginPath();
               ctx.lineWidth = "10";
               ctx.strokeStyle = convertIntToRGB(color);
-              ctx.rect(x, height - height * v, 10, height);
+              ctx.rect(x, heightVolume - heightVolume * v, 10, heightVolume);
               ctx.stroke();
 
               x = (x + 10) % width;
 
               const canvas2 = document.getElementById("canvasWave");
               const ctx2 = canvas2.getContext("2d", { willReadFrequently: true });
-              const halfHeight = canvas2.height / 2;
+              const heightWave = canvas2.height;
+              const halfHeightWave = heightWave / 2;
 
-              ctx2.clearRect(0, 0, width, height);
+              ctx2.clearRect(0, 0, width, heightWave);
 
               const color2 = lerpColor(blue, green, v);
 
+              const fnGetVolumeRange = function (list, index, size) {
+                //console.log('fnGetVolumeRange', list.length, index, size);
+                let d = Math.abs(list[index]);
+                const count = index + size;
+                for (let i = index + 1; i < list.length && i < count; i += 3) {
+                  d = Math.max(d, Math.abs(list[i]));
+                }
+                return d;
+              };
+
+              const increment = Math.floor(document.dataArray.length / width);
+
               for (let i = 0; i < width; ++i) {
 
-                const d = document.dataArray[Math.floor(i * document.dataArray.length / width)];
-                const dv = clamp(-1, 1, Math.pow(1 + Math.abs(d), 4) - 1);
+                const d = fnGetVolumeRange(document.dataArray, Math.floor(i * increment), increment);
+                const dv = clamp(-1, 1, Math.pow(1 + d * 0.75, 2) - 1);
 
                 const color = lerpColor(red, yellow, Math.abs(dv));
                 const color2 = lerpColor(cyan, magenta, Math.abs(dv));
@@ -203,13 +216,13 @@
                 ctx2.beginPath();
                 ctx2.lineWidth = "1";
                 ctx2.strokeStyle = convertIntToRGB(color);
-                ctx2.rect(i, halfHeight, 1, -dv * height * 0.5);
+                ctx2.rect(i, halfHeightWave, 1, -dv * heightWave * 0.5);
                 ctx2.stroke();
 
                 ctx2.beginPath();
                 ctx2.lineWidth = "1";
                 ctx2.strokeStyle = convertIntToRGB(lerpColor(0, color2, 0.5));
-                ctx2.rect(i, halfHeight, 1, dv * height * 0.5);
+                ctx2.rect(i, halfHeightWave, 1, dv * heightWave * 0.5);
                 ctx2.stroke();
               }
             });
