@@ -37,11 +37,66 @@
   </div>
 
   <script>
+    var wrapCookies = {}; // handle blocked cookies
+    function setCookie(cname, cvalue, exdays) {
+      var d = new Date();
+      d.setTime(d.getTime() + (exdays * 24 * 60 * 60 * 1000));
+      var expires = "expires=" + d.toUTCString();
+      document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
+      //console.log('setCookie', cname, cvalue);
+
+      // handle browsers blocking cookies
+      if (exdays == 0) {
+        wrapCookies[cname] = undefined;
+      } else {
+        wrapCookies[cname] = cvalue;
+      }
+    }
+    function getCookieImpl(cname) {
+      var name = cname + "=";
+      var decodedCookie = decodeURIComponent(document.cookie);
+      var ca = decodedCookie.split(';');
+      for (var i = 0; i < ca.length; i++) {
+        var c = ca[i];
+        while (c.charAt(0) == ' ') {
+          c = c.substring(1);
+        }
+        if (c.indexOf(name) == 0) {
+          var result = c.substring(name.length, c.length);
+          //console.log('getCookie', 'name='+cname, 'value='+result);
+          return result;
+        }
+      }
+      //console.log('getCookie', 'name='+cname, 'value=not set');
+      return "";
+    }
+    function getCookie(cname) {
+      var result = getCookieImpl(cname);
+      if (result == '') {
+        if (wrapCookies[cname] !== undefined) {
+          return wrapCookies[cname];
+        }
+      }
+      return result;
+    }
     function setGainVolume(gain) {
+      inputGainVolume.value = Number(gain);
       lblGainVolume.innerText = gain;
+      setCookie('KEY_GAIN_VOLUME', gain, 90);
     }
     function setGainWave(gain) {
+      inputGainWave.value = Number(gain);
       lblGainWave.innerText = gain;
+      setCookie('KEY_GAIN_WAVE', gain, 90);
+    }
+    let gain;
+    gain  = getCookie('KEY_GAIN_VOLUME');
+    if (gain) {
+      setGainVolume(Number(gain));
+    }
+    gain  = getCookie('KEY_GAIN_WAVE');
+    if (gain) {
+      setGainWave(Number(gain));
     }
     var MicrophonePlugin = {
 
